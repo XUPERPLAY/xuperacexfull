@@ -3,60 +3,46 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>XUPERACEXFULL</title>
-    <link rel="manifest" href="manifest.json">
-    <meta name="theme-color" content="#ffcc00">
-    <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/716/716429.png">
-
-    <link href="https://vjs.zencdn.net/8.10.0/video-js.css" rel="stylesheet" />
+    <title>XUPERACEXFULL PLAYER</title>
+    <link href="https://vjs.zencdn.net/7.20.3/video-js.css" rel="stylesheet" />
     <style>
-        :root { --accent: #ffcc00; --bg: #121214; --card: #1e1e21; }
-        body { background: var(--bg); color: white; font-family: 'Segoe UI', sans-serif; margin: 0; padding-bottom: 20px; }
-        .header { background: #000; padding: 15px; text-align: center; border-bottom: 2px solid var(--accent); position: sticky; top: 0; z-index: 100; }
-        .header strong { color: var(--accent); }
-        .video-container { width: 100%; background: #000; aspect-ratio: 16/9; position: sticky; top: 52px; z-index: 99; }
-        .video-js { width: 100%; height: 100%; }
-        .search-box { padding: 15px; }
-        #search-bar { width: 100%; padding: 14px; border-radius: 10px; border: 1px solid #333; background: var(--card); color: white; font-size: 16px; box-sizing: border-box; }
-        #channel-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 12px; padding: 0 15px; }
-        .channel-card { background: var(--card); padding: 15px; border-radius: 12px; text-align: center; cursor: pointer; border: 1px solid #2a2a2a; transition: 0.2s; }
-        .channel-card:active { transform: scale(0.95); border-color: var(--accent); }
-        .channel-card img { height: 45px; margin-bottom: 8px; object-fit: contain; }
-        .channel-card span { display: block; font-size: 12px; font-weight: bold; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-        #motor-alert { display: none; background: #d97706; color: black; padding: 8px; text-align: center; font-size: 12px; font-weight: bold; }
+        body { background-color: #121212; color: white; font-family: sans-serif; margin: 0; padding: 10px; }
+        .container { max-width: 800px; margin: auto; text-align: center; }
+        #main-player { width: 100%; border-radius: 8px; background: black; }
+        .motor-warn { background: #ff9800; color: black; padding: 10px; margin: 10px 0; border-radius: 5px; font-weight: bold; display: none; }
+        .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 10px; margin-top: 20px; }
+        .card { background: #1e1e1e; padding: 10px; border-radius: 8px; cursor: pointer; transition: 0.3s; }
+        .card:hover { background: #333; transform: scale(1.05); }
+        .card img { width: 100%; height: 80px; object-fit: contain; border-radius: 4px; }
+        .card span { display: block; margin-top: 5px; font-size: 12px; height: 30px; overflow: hidden; }
+        #search { width: 100%; padding: 12px; margin-bottom: 15px; border-radius: 5px; border: none; background: #222; color: white; }
     </style>
 </head>
 <body>
 
-<div class="header"><strong>XUPERACEXFULL</strong> PLAYER</div>
-<div id="motor-alert">⚠️ RECUERDA ABRIR ACE STREAM ENGINE</div>
+<div class="container">
+    <h2 style="color: #ffc107;">XUPERACEXFULL <span style="font-weight: 100; color: white;">PLAYER</span></h2>
+    
+    <div id="motor-alert" class="motor-warn">
+        ⚠️ RECUERDA ABRIR ACE SERVE LAUNCHER
+    </div>
 
-<div class="video-container">
-    <video id="main-player" class="video-js vjs-big-play-centered" controls preload="auto" playsinline></video>
+    <video id="main-player" class="video-js vjs-big-play-centered"></video>
+
+    <input type="text" id="search" placeholder="Buscar canal..." onkeyup="filter()">
+
+    <div id="channel-list" class="grid"></div>
 </div>
 
-<div class="search-box">
-    <input type="text" id="search-bar" placeholder="🔍 Buscar canal..." onkeyup="filterChannels()">
-</div>
-
-<div id="channel-list">Cargando lista...</div>
-
-<script src="https://vjs.zencdn.net/8.10.0/video.min.js"></script>
+<script src="https://vjs.zencdn.net/7.20.3/video.min.js"></script>
 <script>
     const M3U_URL = 'https://ipfs.io/ipns/k2k4r8oqlcjxsritt5mczkcn4mmvcmymbqw7113fz2flkrerfwfps004/data/listas/lista_iptv.m3u';
     let channels = [];
-    const player = videojs('main-player', { fluid: true });
+    const player = videojs('main-player', { fluid: true, controls: true });
 
-    async function init() {
-        try {
-            const res = await fetch(M3U_URL);
-            const data = await res.text();
-            parse(data);
-        } catch (e) { document.getElementById('channel-list').innerHTML = "Error cargando lista."; }
-    }
-
-    function parse(text) {
-        const lines = text.split('\n');
+    // Inicializar lista
+    fetch(M3U_URL).then(res => res.text()).then(data => {
+        const lines = data.split('\n');
         for (let i = 0; i < lines.length; i++) {
             if (lines[i].startsWith('#EXTINF')) {
                 const name = lines[i].split(',')[1] || 'Canal';
@@ -69,12 +55,11 @@
             }
         }
         render(channels);
-    }
+    });
 
     function render(list) {
-        const container = document.getElementById('channel-list');
-        container.innerHTML = list.map(c => `
-            <div class="channel-card" onclick="playChannel('${c.id}')">
+        document.getElementById('channel-list').innerHTML = list.map(c => `
+            <div class="card" onclick="playChannel('${c.id}')">
                 <img src="${c.logo}" onerror="this.src='https://cdn-icons-png.flaticon.com/512/716/716429.png'">
                 <span>${c.name}</span>
             </div>
@@ -82,19 +67,34 @@
     }
 
     function playChannel(id) {
-        const streamUrl = `http://127.0.0.1:6878/ace/getstream?id=${id}&format=mp4&_timer=0`;
-        document.getElementById('motor-alert').style.display = 'none';
-        player.src({ src: streamUrl, type: 'video/mp4' });
-        player.play().catch(() => { document.getElementById('motor-alert').style.display = 'block'; });
+        // La URL para ACE SERVE Launcher
+        const streamUrl = `http://127.0.0.1:6878/ace/getstream?id=${id}&format=mp4`;
+        const alertBox = document.getElementById('motor-alert');
+        
+        alertBox.style.display = 'none';
+        player.pause();
+        
+        // Cargar fuente
+        player.src({ type: 'video/mp4', src: streamUrl });
+
+        // Intentar reproducir y capturar bloqueo de seguridad
+        setTimeout(() => {
+            player.play().catch(error => {
+                console.error("Bloqueo de navegador:", error);
+                alertBox.innerHTML = "⚠️ BLOQUEO DE SEGURIDAD: Toca el candado > Ajustes del sitio > Contenido no seguro > PERMITIR.";
+                alertBox.style.display = 'block';
+            });
+        }, 600);
+
         window.scrollTo({top: 0, behavior: 'smooth'});
     }
 
-    function filterChannels() {
-        const q = document.getElementById('search-bar').value.toLowerCase();
+    function filter() {
+        const q = document.getElementById('search').value.toLowerCase();
         render(channels.filter(c => c.name.toLowerCase().includes(q)));
     }
-
-    init();
 </script>
+
 </body>
 </html>
+
