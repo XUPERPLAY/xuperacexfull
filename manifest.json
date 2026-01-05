@@ -1,0 +1,17 @@
+{
+  "name": "XUPERACEXFULL",
+  "short_name": "XuperAce",
+  "description": "Reproductor de AceStream personalizado",
+  "start_url": "index.html",
+  "display": "standalone",
+  "background_color": "#121214",
+  "theme_color": "#ffcc00",
+  "icons": [
+    {
+      "src": "https://cdn-icons-png.flaticon.com/512/716/716429.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
