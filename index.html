@@ -90,8 +90,8 @@
         }
         .main-content {
             flex: 1;
-            padding-top: 140px; /* Más espacio arriba para que la primera fila quede visible debajo del header */
-            padding-bottom: 60px; /* Espacio para footer */
+            padding-top: 155px;
+            padding-bottom: 60px;
             box-sizing: border-box;
         }
         .content {
@@ -99,7 +99,7 @@
         }
         @media (orientation: landscape) {
             .main-content {
-                padding-top: 105px; /* Ajuste en horizontal */
+                padding-top: 120px;
                 padding-bottom: 60px;
             }
             .grid {
@@ -176,14 +176,14 @@
     </div>
 
     <div class="download-buttons">
-        <a href="#" class="download-btn">Descargar Ace Stream Engine</a>
-        <a href="#" class="download-btn">Descargar VLC Oficial</a>
-        <a href="#" class="download-btn">Info AceStream</a>
+        <a href="#" class="download-btn">👇Aqui AceServe👇</a>
+        <a href="#" class="download-btn">👇Aqui VLC👇</a>
+        <a href="#" class="download-btn">👇 Aquí AceStream👇</a>
         <a href="#" class="download-btn events-btn events-mode" id="toggle-btn">Eventos</a>
     </div>
 
     <div class="instructions">
-        Abrir AceServe + VLC en segundo plano o abrir con AceStream
+       (1- Abrir Con AceServe + VLC En Segundo Plano) ó (2-Abrir Con AceStream)
     </div>
 
     <input type="text" id="search" placeholder="Buscar canal..." onkeyup="filter()">
@@ -197,7 +197,7 @@
 </div>
 
 <footer>
-    XUPERACEXFULL PLAYER • Lista IPTV vía IPFS • Uso bajo tu responsabilidad
+    By XUPERACEXFULL PLAYER •
 </footer>
 
 <script>
@@ -232,7 +232,11 @@
                     if (lines[i].startsWith('#EXTINF:')) {
                         const infoLine = lines[i];
                         const name = infoLine.split(',')[1]?.trim() || 'Canal sin nombre';
-                        const logo = infoLine.match(/tvg-logo="([^"]*)"/)?.[1] || '';
+                        const logoMatch = infoLine.match(/tvg-logo="([^"]*)"/);
+                        let logo = DEFAULT_LOGO;
+                        if (logoMatch && logoMatch[1].trim() !== '') {
+                            logo = logoMatch[1].trim();
+                        }
                         const urlLine = lines[i + 1];
                         if (urlLine) {
                             const id = extractId(urlLine);
@@ -262,7 +266,7 @@
     function render(list) {
         document.getElementById('channel-list').innerHTML = list.map(c => `
             <div class="card" onclick="openChannel('${c.id}', this)">
-                <img src="${c.logo || DEFAULT_LOGO}" onerror="this.src='${DEFAULT_LOGO}'">
+                <img src="${c.logo}" onerror="this.onerror=null; this.src='${DEFAULT_LOGO}';">
                 <span>${c.name}</span>
             </div>
         `).join('');
