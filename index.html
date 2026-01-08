@@ -10,8 +10,10 @@
             color: white; 
             font-family: sans-serif; 
             margin: 0; 
-            padding: 0 0 50px 0;
+            padding: 0;
             min-height: 100vh;
+            display: flex;
+            flex-direction: column;
         }
         .header {
             position: fixed;
@@ -19,7 +21,7 @@
             left: 0;
             right: 0;
             background: #1e1e1e;
-            padding: 6px 8px;
+            padding: 5px 6px;
             box-shadow: 0 2px 8px rgba(0,0,0,0.5);
             z-index: 100;
         }
@@ -31,12 +33,12 @@
             flex-wrap: wrap;
         }
         .logo {
-            width: 36px;
-            height: 36px;
+            width: 34px;
+            height: 34px;
             flex-shrink: 0;
         }
         .title {
-            font-size: 17px;
+            font-size: 16px;
             color: #ffc107;
             margin: 0;
             flex-grow: 1;
@@ -47,21 +49,27 @@
         }
         .download-buttons {
             display: flex;
-            gap: 6px;
+            gap: 5px;
             flex-wrap: wrap;
             justify-content: center;
             margin: 4px 0;
         }
         .download-btn {
-            padding: 5px 10px;
+            padding: 4px 8px;
             background: #ff9800;
             color: black;
             font-weight: bold;
             border: none;
             border-radius: 6px;
             cursor: pointer;
-            font-size: 11px;
+            font-size: 10.5px;
             text-decoration: none;
+        }
+        .events-btn.events-mode {
+            background: #4caf50;
+        }
+        .events-btn.channels-mode {
+            background: #f44336;
         }
         .instructions {
             margin: 4px 0;
@@ -72,7 +80,7 @@
         }
         #search {
             width: 100%;
-            padding: 7px;
+            padding: 6px;
             margin: 4px 0;
             border-radius: 6px;
             border: none;
@@ -80,27 +88,33 @@
             color: white;
             font-size: 13px;
         }
+        .main-content {
+            flex: 1;
+            padding-top: 140px; /* Más espacio arriba para que la primera fila quede visible debajo del header */
+            padding-bottom: 60px; /* Espacio para footer */
+            box-sizing: border-box;
+        }
         .content {
-            margin-top: 150px; /* Muy reducido para máximo espacio canales */
             padding: 6px;
         }
         @media (orientation: landscape) {
-            .content {
-                margin-top: 110px; /* Aún menos en horizontal */
+            .main-content {
+                padding-top: 105px; /* Ajuste en horizontal */
+                padding-bottom: 60px;
             }
             .grid {
-                grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+                grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
                 gap: 8px;
             }
         }
         .grid {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+            grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
             gap: 8px;
         }
         .card {
             background: #1e1e1e;
-            padding: 6px;
+            padding: 5px;
             border-radius: 8px;
             cursor: pointer;
             transition: 0.3s;
@@ -119,14 +133,14 @@
         }
         .card img {
             width: 100%;
-            height: 55px;
+            height: 50px;
             object-fit: contain;
             border-radius: 4px;
         }
         .card span {
             margin-top: 4px;
-            font-size: 9.5px;
-            height: 36px;
+            font-size: 9px;
+            height: 32px;
             overflow: hidden;
             line-height: 1.2;
             text-align: center;
@@ -165,6 +179,7 @@
         <a href="#" class="download-btn">Descargar Ace Stream Engine</a>
         <a href="#" class="download-btn">Descargar VLC Oficial</a>
         <a href="#" class="download-btn">Info AceStream</a>
+        <a href="#" class="download-btn events-btn events-mode" id="toggle-btn">Eventos</a>
     </div>
 
     <div class="instructions">
@@ -174,9 +189,11 @@
     <input type="text" id="search" placeholder="Buscar canal..." onkeyup="filter()">
 </div>
 
-<div class="content">
-    <div id="loading" class="loading">Cargando lista de canales...</div>
-    <div id="channel-list" class="grid" style="display:none;"></div>
+<div class="main-content">
+    <div class="content">
+        <div id="loading" class="loading">Cargando lista de canales...</div>
+        <div id="channel-list" class="grid" style="display:none;"></div>
+    </div>
 </div>
 
 <footer>
@@ -184,10 +201,12 @@
 </footer>
 
 <script>
-    const M3U_URL = 'https://ipfs.io/ipns/k2k4r8oqlcjxsritt5mczkcn4mmvcmymbqw7113fz2flkrerfwfps004/data/listas/lista_iptv.m3u';
+    const MAIN_M3U = 'https://ipfs.io/ipns/k2k4r8oqlcjxsritt5mczkcn4mmvcmymbqw7113fz2flkrerfwfps004/data/listas/lista_iptv.m3u';
+    const EVENTS_M3U = 'https://raw.githubusercontent.com/Icastresana/lista1/main/eventos.m3u';
     const DEFAULT_LOGO = 'https://i.postimg.cc/0QKq131f/logo8-2-222011.png';
     let channels = [];
     let selectedCard = null;
+    let currentList = 'main';
 
     function extractId(rawUrl) {
         const url = rawUrl.trim();
@@ -200,36 +219,45 @@
         return null;
     }
 
-    fetch(M3U_URL)
-        .then(res => res.text())
-        .then(data => {
-            const lines = data.split('\n');
-            for (let i = 0; i < lines.length; i++) {
-                if (lines[i].startsWith('#EXTINF:')) {
-                    const infoLine = lines[i];
-                    const name = infoLine.split(',')[1]?.trim() || 'Canal sin nombre';
-                    const logo = infoLine.match(/tvg-logo="([^"]*)"/)?.[1] || '';
-                    const urlLine = lines[i + 1];
-                    if (urlLine) {
-                        const id = extractId(urlLine);
-                        if (id) {
-                            channels.push({ name, logo, id });
+    function loadChannels(url) {
+        document.getElementById('loading').style.display = 'block';
+        document.getElementById('channel-list').style.display = 'none';
+        channels = [];
+
+        fetch(url)
+            .then(res => res.text())
+            .then(data => {
+                const lines = data.split('\n');
+                for (let i = 0; i < lines.length; i++) {
+                    if (lines[i].startsWith('#EXTINF:')) {
+                        const infoLine = lines[i];
+                        const name = infoLine.split(',')[1]?.trim() || 'Canal sin nombre';
+                        const logo = infoLine.match(/tvg-logo="([^"]*)"/)?.[1] || '';
+                        const urlLine = lines[i + 1];
+                        if (urlLine) {
+                            const id = extractId(urlLine);
+                            if (id) {
+                                channels.push({ name, logo, id });
+                            }
                         }
                     }
                 }
-            }
 
-            document.getElementById('loading').style.display = 'none';
-            if (channels.length === 0) {
-                document.getElementById('loading').innerText = 'No se encontraron canales compatibles.';
-            } else {
-                document.getElementById('channel-list').style.display = 'grid';
-                render(channels);
-            }
-        })
-        .catch(err => {
-            document.getElementById('loading').innerText = 'Error cargando la lista. Recarga la página.';
-        });
+                document.getElementById('loading').style.display = 'none';
+                if (channels.length === 0) {
+                    document.getElementById('loading').innerText = 'No se encontraron canales compatibles en esta lista.';
+                } else {
+                    document.getElementById('channel-list').style.display = 'grid';
+                    render(channels);
+                    document.getElementById('search').value = '';
+                }
+            })
+            .catch(err => {
+                document.getElementById('loading').innerText = 'Error cargando la lista. Recarga la página.';
+            });
+    }
+
+    loadChannels(MAIN_M3U);
 
     function render(list) {
         document.getElementById('channel-list').innerHTML = list.map(c => `
@@ -246,8 +274,6 @@
         selectedCard = cardElement;
 
         const link = `acestream://${id}`;
-
-        // Método definitivo para Android: usar protocolo acestream:// directamente
         window.location = link;
     }
 
@@ -256,6 +282,28 @@
         const filtered = channels.filter(c => c.name.toLowerCase().includes(q));
         render(filtered);
     }
+
+    const toggleBtn = document.getElementById('toggle-btn');
+    toggleBtn.onclick = function(e) {
+        e.preventDefault();
+        if (currentList === 'main') {
+            loadChannels(EVENTS_M3U);
+            this.innerText = 'Canales';
+            this.classList.remove('events-mode');
+            this.classList.add('channels-mode');
+            currentList = 'events';
+        } else {
+            loadChannels(MAIN_M3U);
+            this.innerText = 'Eventos';
+            this.classList.remove('channels-mode');
+            this.classList.add('events-mode');
+            currentList = 'main';
+        }
+        if (selectedCard) {
+            selectedCard.classList.remove('selected');
+            selectedCard = null;
+        }
+    };
 </script>
 
 </body>
